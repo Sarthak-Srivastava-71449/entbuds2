@@ -3,7 +3,8 @@ import { Button } from '@mui/material';
 import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
 import Autosuggest from 'react-autosuggest';
 import cityList from './Cities';
-import { API_CONFIG, DEFAULT_CITY } from '../../config/constants';
+import { DEFAULT_CITY } from '../../config/constants';
+import { fetchCityBookings, getErrorMessage } from '../../utils/apiHelpers';
 import './Book.css';
 import imagenot from './nopost.png';
 
@@ -26,19 +27,12 @@ const Book = () => {
       setIsLoading(true);
       setError(null);
       const cityToShow = cityArg || city || DEFAULT_CITY;
-      const response = await fetch(
-        `${API_CONFIG.BASE_URL}/api/movies/${cityToShow.toLowerCase()}`
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await fetchCityBookings(cityToShow);
       setMovieBooks(data.movies || []);
     } catch (err) {
       console.error('Error fetching movies:', err);
-      setError('Failed to fetch movies. Please try again.');
+      const errorMsg = getErrorMessage(err);
+      setError(errorMsg);
       setMovieBooks([]);
     } finally {
       setIsLoading(false);

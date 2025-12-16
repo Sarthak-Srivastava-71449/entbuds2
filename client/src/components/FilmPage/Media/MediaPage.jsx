@@ -12,8 +12,10 @@ import {
   formatDate,
   formatRating,
   getMovieTitle,
+  postReview,
+  fetchReviewByTitle,
 } from '../../../utils/apiHelpers';
-import { API_CONFIG, ERROR_MESSAGES } from '../../../config/constants';
+import { ERROR_MESSAGES } from '../../../config/constants';
 import './MediaPage.css';
 
 /**
@@ -89,30 +91,24 @@ const MediaPage = ({ mediaType = 'movie' }) => {
       const title = getMovieTitle(mediaData);
 
       // Check if review exists
-      const checkResponse = await fetch(
-        `${API_CONFIG.BASE_URL}/api/review/${encodeURIComponent(title)}`
-      );
-      const checkData = await checkResponse.json();
+      let checkData;
+      try {
+        checkData = await fetchReviewByTitle(title);
+      } catch (err) {
+        // Review doesn't exist yet, which is fine
+        checkData = { exist: false };
+      }
 
-      const reviewPayload = JSON.stringify({
+      // Post the review
+      await postReview({
         title,
+        exist: checkData.exist,
         reviews: {
           review: reviewText,
           name: user?.name,
           image: user?.picture,
         },
       });
-
-      const method = checkData.exist ? 'PUT' : 'POST';
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/review`, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: reviewPayload,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to post review');
-      }
 
       setRenderToggle(!renderToggle);
       setReviewText('');

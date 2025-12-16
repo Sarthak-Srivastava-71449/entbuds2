@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@mui/material';
 import { useAuth0 } from '@auth0/auth0-react';
 import Cards from '../../Slide/Card';
+import { shareUserList, getErrorMessage, apiFetch } from '../../../utils/apiHelpers';
 import { API_CONFIG } from '../../../config/constants';
 import './ListPage.css';
 
@@ -28,15 +29,9 @@ const ListPage = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch(
+        const data = await apiFetch(
           `${API_CONFIG.BASE_URL}/api/likedmovie/${user.email}`
         );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
 
         if (isMounted) {
           if (data.msg === 'Success') {
@@ -48,7 +43,7 @@ const ListPage = () => {
       } catch (err) {
         console.error('Error fetching liked movies:', err);
         if (isMounted) {
-          setError(err.message || 'Failed to fetch liked movies');
+          setError(getErrorMessage(err));
         }
       } finally {
         if (isMounted) {
@@ -81,13 +76,7 @@ const ListPage = () => {
 
     try {
       setIsSharing(true);
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/share/${user.email}`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await shareUserList(user.email);
 
       if (data.msg === 'Success' && data.shareLink) {
         window.open(data.shareLink, '_blank');
@@ -96,7 +85,8 @@ const ListPage = () => {
       }
     } catch (err) {
       console.error('Error sharing list:', err);
-      alert('Failed to share list. Please try again.');
+      const errorMsg = getErrorMessage(err);
+      alert(errorMsg || 'Failed to share list. Please try again.');
     } finally {
       setIsSharing(false);
     }

@@ -1,11 +1,12 @@
 /**
  * Utility functions for API calls and error handling
+ * Provides centralized API service layer for all components
  */
 
 import { API_CONFIG, ERROR_MESSAGES } from '../config/constants';
 
 /**
- * Parse API error response
+ * Parse API error response and return user-friendly message
  * @param {Error | Response} error - Error object or response
  * @returns {string} Error message
  */
@@ -14,6 +15,10 @@ export const getErrorMessage = (error) => {
     return error.response.data?.message || ERROR_MESSAGES.FETCH_ERROR;
   }
   if (error.message) {
+    // Don't leak internal errors to user
+    if (error.message.includes('HTTP error')) {
+      return ERROR_MESSAGES.FETCH_ERROR;
+    }
     return error.message;
   }
   return ERROR_MESSAGES.FETCH_ERROR;
@@ -36,7 +41,9 @@ export const apiFetch = async (url, options = {}) => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      const errorMsg = errorData.message || `HTTP error! status: ${response.status}`;
+      throw new Error(errorMsg);
     }
 
     return await response.json();
@@ -140,4 +147,93 @@ export const getMovieTitle = (movie) => {
 export const getMediaDate = (media, mediaType = 'movie') => {
   if (!media) return '';
   return mediaType === 'movie' ? media.release_date : media.first_air_date;
+};
+
+/**
+ * Add movie to user's liked list
+ * @param {string} email - User email
+ * @param {object} movie - Movie object to add
+ * @returns {Promise} Response from server
+ */
+export const addMovieToLiked = async (email, movie) => {
+  if (!email || !movie) {
+    throw new Error('Email and movie data are required');
+  }
+
+  return apiFetch(`${API_CONFIG.BASE_URL}/api/add`, {
+    method: 'POST',
+    body: JSON.stringify({ email, data: movie }),
+  });
+};
+
+/**
+ * Remove movie from user's liked list
+ * @param {string} email - User email
+ * @param {number} movieId - Movie ID to remove
+ * @returns {Promise} Response from server
+ */
+export const removeMovieFromLiked = async (email, movieId) => {
+  if (!email || !movieId) {
+    throw new Error('Email and movieId are required');
+  }
+
+  return apiFetch(`${API_CONFIG.BASE_URL}/api/delete`, {
+    method: 'PUT',
+    body: JSON.stringify({ email, filmId: movieId }),
+  });
+};
+
+/**
+ * Post or update a review
+ * @param {object} reviewData - Review data with title, reviews, etc
+ * @returns {Promise} Response from server
+ */
+export const postReview = async (reviewData) => {
+  if (!reviewData?.title) {
+    throw new Error('Review title is required');
+  }
+
+  return apiFetch(`${API_CONFIG.BASE_URL}/api/review`, {
+    method: 'POST',
+    body: JSON.stringify(reviewData),
+  });
+};
+
+/**
+ * Fetch review by title
+ * @param {string} title - Review title
+ * @returns {Promise} Review data
+ */
+export const fetchReviewByTitle = async (title) => {
+  if (!title) {
+    throw new Error('Title is required');
+  }
+
+  return apiFetch(`${API_CONFIG.BASE_URL}/api/review/${encodeURIComponent(title)}`);
+};
+
+/**
+ * Share user's list with another user
+ * @param {string} email - User email
+ * @returns {Promise} Share data
+ */
+export const shareUserList = async (email) => {
+  if (!email) {
+    throw new Error('Email is required');
+  }
+
+  return apiFetch(`${API_CONFIG.BASE_URL}/api/share/${email}`);
+};
+
+/**
+ * Fetch bookings for a city
+ * @param {string} city - City name
+ * @returns {Promise} Bookings data
+ */
+export const fetchCityBookings = async (city) => {
+  if (!city) {
+    throw new Error('City is required');
+  }
+
+  return apiFetch(`${API_CONFIG.BASE_URL}/api/movies/${city.toLowerCase()}`);
 };

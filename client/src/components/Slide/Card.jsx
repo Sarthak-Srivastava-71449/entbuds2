@@ -6,8 +6,8 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import { useAuth0 } from '@auth0/auth0-react';
 import { getLikedMovies, invalidateLikedCache } from '../../utils/likedCache';
-import { getTMDBImageUrl, truncateText } from '../../utils/apiHelpers';
-import { COLORS, UI_CONFIG, API_CONFIG } from '../../config/constants';
+import { getTMDBImageUrl, truncateText, addMovieToLiked, removeMovieFromLiked } from '../../utils/apiHelpers';
+import { COLORS, UI_CONFIG } from '../../config/constants';
 import './Card.css';
 
 /**
@@ -71,19 +71,7 @@ const Card = ({ movie, onRemove, mediaType = 'movie' }) => {
 
       try {
         setIsLiked(true);
-        const response = await fetch(`${API_CONFIG.BASE_URL}/api/add`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: user.email,
-            data: movie,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
+        await addMovieToLiked(user.email, movie);
         // Invalidate cache for this user so other cards update
         invalidateLikedCache(user.email);
       } catch (error) {
@@ -108,19 +96,7 @@ const Card = ({ movie, onRemove, mediaType = 'movie' }) => {
 
       try {
         setIsLiked(false);
-        const response = await fetch(`${API_CONFIG.BASE_URL}/api/delete`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: user.email,
-            filmId: movie.id,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
+        await removeMovieFromLiked(user.email, movie.id);
         // Invalidate cache for this user so other cards update
         invalidateLikedCache(user.email);
 
