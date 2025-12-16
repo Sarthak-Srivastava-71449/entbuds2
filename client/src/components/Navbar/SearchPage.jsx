@@ -1,80 +1,164 @@
-import React, {useState, useEffect} from 'react';
-import "./SearchPage.css";
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from '../../api/Axios';
 import wants from '../../api/Wanted';
 import Cards from '../Slide/Card';
+import { ERROR_MESSAGES } from '../../config/constants';
+import './SearchPage.css';
 
+/**
+ * SearchPage component for movie/TV search functionality
+ * Handles query input and paginated results display
+ */
+const SearchPage = () => {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isLoadMoreVisible, setIsLoadMoreVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-const SearchPage = () => { 
-
-    const [query, setQuery] = useState(''); 
-  const [results, setResults] = useState([]); 
-  const [page, setPage] = useState(1); 
-  const [showload, setshowload] = useState(false); 
-
-
-  useEffect(() =>{
-    if(query){
-        axios.get(`${wants.getsearch}&query=${query}&page=${page}`)
-        .then(response => {
-            setResults(prevMovies => [...prevMovies, ...response.data.results]);
-        })
-    } else{
-        setResults([])
-    }
-  }, [query, page])
-
+  /**
+   * Fetch search results from API
+   */
   useEffect(() => {
-    if(results && results.length >= 4){
-        setshowload(true);
-    }else{
-        setshowload(false);
-    }
-  }, [results])
-
-  const InputChange = e => {
-    const value = e.target.value;
-  setQuery(value);
-
-    if (value) {
-      if (results.length > 0) {
-        const match = results.find(
-          movie =>
-          movie.title &&
-            movie.title.toLowerCase() === value.toLowerCase()
-        );
-        if (match) {
-          setResults([match]);
-        } else {
-          setResults([]);
-        }
-      }
-    } else {
+    if (!query) {
       setResults([]);
+      setPage(1);
+      return;
     }
-  };
+
+    const fetchResults = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await axios.get(`${wants.getsearch}&query=${query}&page=${page}`);
+
+        if (response.data && response.data.results) {
+          setResults((prevResults) =>
+            page === 1 ? response.data.results : [...prevResults, ...response.data.results]
+          );
+        }
+      } catch (err) {
+        console.error('Search error:', err);
+        setError(err.message || ERROR_MESSAGES.FETCH_ERROR);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      fetchResults();
+    }, 300); // Debounce search requests
+
+    return () => clearTimeout(timer);
+  }, [query, page]);
+
+  /**
+   * Update visibility of "Load More" button based on results count
+   */
+  useEffect(() => {
+    setIsLoadMoreVisible(results.length >= 4);
+  }, [results]);
+
+  /**
+   * Handle input change and filter results
+   */
+  const handleInputChange = useCallback((e) => {
+    const value = e.target.value;
+    setQuery(value);
+    setPage(1);
+
+    if (!value) {
+      setResults([]);
+      return;
+    }
+
+    // Filter results in real-time for better UX
+    if (results.length > 0) {
+      const filtered = results.filter((movie) => {
+        const title = movie.original_title || movie.original_name || '';
+        return title.toLowerCase().includes(value.toLowerCase());
+      });
+      setResults(filtered);
+    }
+  }, [results]);
+
+  /**
+   * Handle load more button click
+   */
+  const handleLoadMore = useCallback(() => {
+    setPage((prevPage) => prevPage + 1);
+  }, []);
 
   return (
     <div>
-        <br />
-        <br />
-        <br />
+      <br />
+      <br />
+      <br />
+      <br />
+      <br />
+      <br />
 
-         <br />
-         <br />
-         <br />
-      <input type="text"  className="searchbar" placeholder="  Search for a movie" value={query} onChange={InputChange}  style={{ color: 'white', fontSize: '12px', paddingLeft: "1em" }} />
-      <br />
-      <br />
-      <br />
-      <div className='searchresults'>
-      {results.map((result, index) => (
-        <Cards key={index} movie={result} />
-      ))}
+      {/* Search Input */}
+      <input
+        type="text"
+        className="searchbar"
+        placeholder="Search for a movie"
+        value={query}
+        onChange={handleInputChange}
+        style={{ color: 'white', fontSize: '12px', paddingLeft: '1em' }}
+        aria-label="Search movies"
+      />
+
+      {/* Error Message */}
+      {error && (
+        <div style={{ color: '#d32f2f', padding: '1em', textAlign: 'center' }}>
+          {error}
+        </div>
+      )}
+
+      {/* Loading Message */}
+      {isLoading && (
+        <div style={{ color: '#fff', padding: '1em', textAlign: 'center' }}>
+          Loading...
+        </div>
+      )}
+
+      {/* Results */}
+      <div className="searchresults">
+        {results.length === 0 && query && !isLoading && (
+          <div style={{ color: '#fff', padding: '1em', textAlign: 'center' }}>
+            {ERROR_MESSAGES.NO_MOVIES}
+          </div>
+        )}
+        {results.map((result) => (
+          <Cards key={result.id} movie={result} />
+        ))}
       </div>
-      {showload && (<button onClick={() => setPage(prevPage => prevPage + 1)}>Load More</button>)}
-    </div>
-  )
-}
 
-export default SearchPage
+      {/* Load More Button */}
+      {isLoadMoreVisible && !isLoading && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '2em' }}>
+          <button
+            onClick={handleLoadMore}
+            style={{
+              padding: '0.5em 2em',
+              background: '#e53935',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '1rem',
+            }}
+          >
+            Load More
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+SearchPage.propTypes = {};
+
+export default SearchPage;

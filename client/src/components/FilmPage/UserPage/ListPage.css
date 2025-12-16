@@ -1,0 +1,19 @@
+/* Layout for user list page */
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.share-button {
+  margin: 16px;
+}
+
+.list > * {
+  flex: 0 0 200px; /* match card min-width */
+}
+
+.list p { color: white; padding: 16px }

@@ -1,2 +1,90 @@
-.listCard { display:flex; flex-wrap:wrap; gap:12px }
-.listCard > * { flex: 0 0 160px }
+.listCard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100vw;
+}
+.listCard > * {
+  flex: 0 0 160px;
+}
+
+/* When rendered on homepage, make the list horizontally scrollable */
+.listCard.horizontal {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 12px;
+}
+.listCard.horizontal > * {
+  flex: 0 0 200px; /* match Card min-width to avoid overflow */
+}
+
+/* Header layout: title left, actions (load more) right */
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding: 0 16px; /* keep header content inside viewport with proper padding */
+  box-sizing: border-box;
+}
+.listHeader .listTitle {
+  color: white;
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* prevent title from pushing button out */
+  max-width: calc(100% - 140px); /* leave space for buttons on right */
+  letter-spacing: 0.5px;
+}
+.listHeader .listActions {
+  margin-left: 24px;
+  flex-shrink: 0;
+}
+
+/* Small screens: make horizontal list show partial items */
+@media (max-width: 768px) {
+  .listCard.horizontal > * {
+    flex: 0 0 140px;
+  }
+}
+
+/* Constrain the list container so the horizontal scrolling stays inside the viewport */
+.listContainer {
+  width: 100%;
+  max-width: 100%; /* avoid using 100vw which can cause overflow when scrollbars present */
+  overflow: hidden; /* prevent page horizontal scroll */
+  padding: 0 12px; /* better page padding so contents have breathing room */
+  box-sizing: border-box;
+}
+
+/* Allow horizontal scrolling per-band while preventing vertical overflow from the band */
+.listCard.horizontal {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure the header actions (Load More) remain visible on the right within the viewport */
+.listHeader .listActions {
+  flex: 0 0 auto;
+}
+
+/* For accessibility, show a faint scrollbar space */
+.listCard.horizontal {
+  scrollbar-width: thin;
+}
+
+/* Hide scrollbars across browsers but keep scrolling functionality */
+.listCard.horizontal::-webkit-scrollbar {
+  height: 0;
+}
+.listCard.horizontal {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.listCard.horizontal::-webkit-scrollbar {
+  display: none;
+}

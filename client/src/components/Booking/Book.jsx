@@ -1,148 +1,199 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Button } from "@mui/material";
+import { Button } from '@mui/material';
 import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
-import './Book.css';
-import imagenot from './nopost.png';
 import Autosuggest from 'react-autosuggest';
 import cityList from './Cities';
+import { API_CONFIG, DEFAULT_CITY } from '../../config/constants';
+import './Book.css';
+import imagenot from './nopost.png';
 
+/**
+ * Book component for movie ticket booking
+ * Allows users to search for movies in different cities
+ */
 const Book = () => {
-  const [moviebooks, setMoviebooks] = useState([]);
-  const [city, setCity] = useState("");
+  const [movieBooks, setMovieBooks] = useState([]);
+  const [city, setCity] = useState('');
   const [suggestions, setSuggestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // useEffect(() => {
-  //   fetch(`${process.env.REACT_APP_DATABASE}/api/movies/jalandhar`)
-  //     .then(response => response.json())
-  //     .then(data => {
-  //       const links = data.movies.map(movie => movie.bookingUrl);
-  //       setMoviebooks(links);
-  //     })
-  //     .catch(error => {
-  //       console.log('Error fetching movie data:', error);
-  //     });
-  // }, []);
-
+  /**
+   * Fetch movies for a given city
+   */
   const fetchMovies = useCallback(async (cityArg = null) => {
     try {
-      const cityToshow = cityArg || city || 'mumbai';
-      const response = await fetch(`${process.env.REACT_APP_DATABASE}/api/movies/${cityToshow}`);
+      setIsLoading(true);
+      setError(null);
+      const cityToShow = cityArg || city || DEFAULT_CITY;
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}/api/movies/${cityToShow.toLowerCase()}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
-      const { movies } = data;
-      setMoviebooks(movies);
-    } catch (error) {
-      console.error('Error fetching movie data:', error);
+      setMovieBooks(data.movies || []);
+    } catch (err) {
+      console.error('Error fetching movies:', err);
+      setError('Failed to fetch movies. Please try again.');
+      setMovieBooks([]);
+    } finally {
+      setIsLoading(false);
     }
   }, [city]);
 
+  /**
+   * Load initial movies on component mount
+   */
   useEffect(() => {
-    // initial load
     fetchMovies();
   }, [fetchMovies]);
-  
 
-  const getSuggestions = value => {
+  /**
+   * Get city suggestions based on input
+   */
+  const getSuggestions = useCallback((value) => {
     const inputValue = value.trim().toLowerCase();
-    const inputLength = inputValue.length;
-    return inputLength === 0 ? [] : cityList.filter(city =>
-      city.toLowerCase().slice(0, inputLength) === inputValue
-    );
-  };
+    if (inputValue.length === 0) return [];
 
-  const renderSuggestion = suggestion => (
+    return cityList.filter((cityItem) =>
+      cityItem.toLowerCase().startsWith(inputValue)
+    );
+  }, []);
+
+  /**
+   * Render individual suggestion item
+   */
+  const renderSuggestion = (suggestion) => (
     <span className="suggestion-item">{suggestion}</span>
   );
 
+  /**
+   * Render suggestions container
+   */
   const renderSuggestionsContainer = ({ containerProps, children }) => (
     <div {...containerProps} className="suggestions-container">
       {children}
     </div>
   );
-  
 
-  const onSuggestionsFetchRequested = ({ value }) => {
+  /**
+   * Handle suggestions fetch
+   */
+  const handleSuggestionsFetchRequested = ({ value }) => {
     setSuggestions(getSuggestions(value));
   };
 
-  const onSuggestionsClearRequested = () => {
+  /**
+   * Handle suggestions clear
+   */
+  const handleSuggestionsClearRequested = () => {
     setSuggestions([]);
   };
 
-  const onSuggestionSelected = (_, { suggestion }) => {
+  /**
+   * Handle suggestion selection
+   */
+  const handleSuggestionSelected = (_, { suggestion }) => {
     setCity(suggestion.toLowerCase());
   };
+
+  /**
+   * Handle "Let's Go" button click
+   */
+  const handleSearch = useCallback(() => {
+    fetchMovies(city || DEFAULT_CITY);
+  }, [city, fetchMovies]);
 
   const inputProps = {
     placeholder: 'Enter city',
     value: city,
     onChange: (_, { newValue }) => setCity(newValue),
     className: 'ticketsearch',
-    style: { color: 'white', fontSize: '12px', paddingLeft: "1em" },
+    style: { color: 'white', fontSize: '12px', paddingLeft: '1em' },
+    'aria-label': 'Enter city for movie bookings',
   };
 
   return (
-    <div style={{minHeight: "90vh"}}>
+    <div style={{ minHeight: '90vh' }}>
       <br />
       <br />
       <br />
       <br />
       <br />
-      <br /><br />
+      <br />
+      <br />
 
-
-      <div className='ticketsearcher'>
-      
-      <Autosuggest
+      {/* Search Section */}
+      <div className="ticketsearcher">
+        <Autosuggest
           suggestions={suggestions}
-          onSuggestionsFetchRequested={onSuggestionsFetchRequested}
-          onSuggestionsClearRequested={onSuggestionsClearRequested}
-          onSuggestionSelected={onSuggestionSelected}
-          getSuggestionValue={value => value}
+          onSuggestionsFetchRequested={handleSuggestionsFetchRequested}
+          onSuggestionsClearRequested={handleSuggestionsClearRequested}
+          onSuggestionSelected={handleSuggestionSelected}
+          getSuggestionValue={(value) => value}
           renderSuggestion={renderSuggestion}
           renderSuggestionsContainer={renderSuggestionsContainer}
           inputProps={inputProps}
         />
-      <Button style={{
-                fontSize: "1rem",
-                width: "9vw",
-                background: "red",         
-                color: "white",                
-                textDecoration: "none"
-              }} onClick={fetchMovies}>Let's Go</Button>
+        <Button
+          onClick={handleSearch}
+          disabled={isLoading}
+          sx={{
+            fontSize: '1rem',
+            width: '9vw',
+            background: '#e53935',
+            color: 'white',
+            textDecoration: 'none',
+            '&:hover': {
+              background: '#c62828',
+            },
+            '&:disabled': {
+              background: '#999',
+            },
+          }}
+          endIcon={<ArrowRightAltIcon />}
+        >
+          {isLoading ? 'Loading...' : "Let's Go"}
+        </Button>
       </div>
-      <br />
-      <br />
-      <br />
 
-      {moviebooks.map((link, index) => (
-        <div className='bookcard' key={index}>
-          
-          <img className='book-img' src={link.posterUrl || imagenot} alt='poster'></img>
-          <div className='bookbtn'>
-          <a href={link.bookingUrl} target="_blank" rel="noopener noreferrer">
-          <Button style={{
-                fontSize: "1.2rem",
-                background: " rgba(0, 0, 0, 0.7)",
-                width: "14vw",           
-                color: "red",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}><ArrowRightAltIcon fontSize='large'  /></Button>
-        </a>
-          </div>
-          <div className='book-overlay'>
-          <div className="book-title">
-            <h2>{link.title}</h2>
-            </div>
-           
-          </div>
-        
+      {/* Error Message */}
+      {error && (
+        <div style={{ color: '#d32f2f', padding: '1em', textAlign: 'center' }}>
+          {error}
         </div>
-      ))}
-      
-    </div>
-  )
-}
+      )}
 
-export default Book
+      {/* Movies Grid */}
+      <div className="books">
+        {movieBooks.length > 0 ? (
+          movieBooks.map((movie) => (
+            <div key={movie.id} className="book">
+              <img
+                src={movie.image || imagenot}
+                alt={movie.title}
+                className="book-image"
+              />
+              <h3>{movie.title}</h3>
+              <p>{movie.description}</p>
+            </div>
+          ))
+        ) : (
+          !isLoading && (
+            <p style={{ color: 'white', gridColumn: '1 / -1', textAlign: 'center' }}>
+              No movies found. Try another city!
+            </p>
+          )
+        )}
+      </div>
+    </div>
+  );
+};
+
+Book.propTypes = {};
+
+export default Book;

@@ -67,7 +67,8 @@ swiper-button-prev slider-arrow{
 .allCategoriesContainer{
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch; /* allow children to take full width */
+  width: 100%;
 }
 
 @media (max-width: 768px) {

@@ -1,97 +1,140 @@
-import { useState, useEffect } from "react";
-import "./Card.css";
-import { Link } from "react-router-dom";
-import { Button } from "@mui/material";
+import PropTypes from 'prop-types';
+import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '@mui/material';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth0 } from '@auth0/auth0-react';
 import { getLikedMovies, invalidateLikedCache } from '../../utils/likedCache';
+import { getTMDBImageUrl, truncateText } from '../../utils/apiHelpers';
+import { COLORS, UI_CONFIG, API_CONFIG } from '../../config/constants';
+import './Card.css';
 
-const Cards = ({ movie, onRemove }) => {
+/**
+ * Card component for displaying movie/TV show information
+ * Handles liked/favorites functionality for authenticated users
+ */
+const Card = ({ movie, onRemove, mediaType = 'movie' }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [liked , setLiked] = useState(false)
+  const [isLiked, setIsLiked] = useState(false);
   const { user, isAuthenticated } = useAuth0();
 
+  // Simulate loading animation
   useEffect(() => {
-    setTimeout(() => {
-      setIsLoading(false)
-    }, 2100)
-  }, [])
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, UI_CONFIG.SKELETON_ANIMATION_DURATION);
 
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Fetch liked status for current movie
   useEffect(() => {
-    let mounted = true;
-    setLiked(false); // Reset isLiked state when component re-renders
-    if (movie && isAuthenticated && user?.email) {
-      getLikedMovies(user.email).then((likedMovies) => {
-        if (!mounted) return;
-        const isLikedMovie = (likedMovies || []).some((likedMovie) => likedMovie.id === movie.id);
-        setLiked(isLikedMovie);
-      }).catch(() => {});
-    }
-    setIsLoading(false);
-    return () => { mounted = false };
+    let isMounted = true;
+
+    const checkIfLiked = async () => {
+      if (!movie || !isAuthenticated || !user?.email) {
+        setIsLiked(false);
+        return;
+      }
+
+      try {
+        const likedMovies = await getLikedMovies(user.email);
+        if (isMounted) {
+          const liked = (likedMovies || []).some((m) => m.id === movie.id);
+          setIsLiked(liked);
+        }
+      } catch (error) {
+        console.error('Error checking liked status:', error);
+        if (isMounted) setIsLiked(false);
+      }
+    };
+
+    checkIfLiked();
+
+    return () => {
+      isMounted = false;
+    };
   }, [movie, user?.email, isAuthenticated]);
 
-  const addToLiked = async (event) => {
-    try {
+  /**
+   * Add movie to liked list
+   */
+  const handleAddToLiked = useCallback(
+    async (event) => {
       event.preventDefault();
-      setLiked(true);
-  const liker = await fetch(`${process.env.REACT_APP_DATABASE}/api/add`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: user.email,
-          data: movie
-        })
-      });
-  
-      if (!liker.ok) {
-        throw new Error(`HTTP error! status: ${liker.status}`);
-      }
-  
-      const likerData = await liker.json();
-      console.log(likerData);
-  // Invalidate cache for this user so other cards update
-  invalidateLikedCache(user.email);
-  
-    } catch (e) {
-      console.log(e);
-    }
-  };
 
-  const deleteFromLiked = async (event) => {
-    try {
+      if (!user?.email) {
+        console.error('User email not available');
+        return;
+      }
+
+      try {
+        setIsLiked(true);
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/add`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email,
+            data: movie,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Invalidate cache for this user so other cards update
+        invalidateLikedCache(user.email);
+      } catch (error) {
+        console.error('Error adding to liked:', error);
+        setIsLiked(false);
+      }
+    },
+    [user?.email, movie]
+  );
+
+  /**
+   * Remove movie from liked list
+   */
+  const handleDeleteFromLiked = useCallback(
+    async (event) => {
       event.preventDefault();
-      setLiked(false)
-  const deleter = await fetch(`${process.env.REACT_APP_DATABASE}/api/delete`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: user.email,
-          filmId: movie.id
-        })
-      });
-  
-      if (!deleter.ok) {
-        throw new Error(`HTTP error! status: ${deleter.status}`);
-      }
-  
-      const deleterData = await deleter.json();
-      console.log(deleterData);
-  // Invalidate cache for this user so other cards update
-  invalidateLikedCache(user.email);
 
-      onRemove(movie.id)
-  
-    } catch (e) {
-      console.log(e);
-    }
-  };
-  
+      if (!user?.email) {
+        console.error('User email not available');
+        return;
+      }
+
+      try {
+        setIsLiked(false);
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/delete`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email,
+            filmId: movie.id,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Invalidate cache for this user so other cards update
+        invalidateLikedCache(user.email);
+
+        // Notify parent to remove from list if on a list page
+        if (onRemove) {
+          onRemove(movie.id);
+        }
+      } catch (error) {
+        console.error('Error removing from liked:', error);
+        setIsLiked(true);
+      }
+    },
+    [user?.email, movie.id, onRemove]
+  );
 
   return (
     <>
@@ -101,61 +144,75 @@ const Cards = ({ movie, onRemove }) => {
         </div>
       ) : (
         <Link
-          to={`/movie/${movie.id}` || `/series/${movie.id}`}
-          style={{ textDecoration: "none", color: "white" }}
+          to={mediaType === 'tv' ? `/series/${movie.id}` : `/movie/${movie.id}`}
+          style={{ textDecoration: 'none', color: 'white' }}
         >
           <div className="card">
-          
+            {/* Movie Poster */}
             <img
               className="cards-img"
-              alt={""}
-              src={`https://image.tmdb.org/t/p/original${
-                movie ? movie.poster_path : ""
-              }`}
+              alt={movie?.original_title || movie?.original_name || 'Movie poster'}
+              src={getTMDBImageUrl(movie?.poster_path)}
             />
+
+            {/* Like/Unlike Button */}
             {isAuthenticated && (
-            <div className='btnlike'>
-          {!liked ? (
-          <Button style={{
-                fontSize: "1.2rem",
-                background: " rgba(0, 0, 0, 0.7)",
-                width: "100%",   
-                bottom: "1",        
-                color: "red",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }} onClick={addToLiked}><FavoriteBorderIcon width='100%' fontSize="medium"  /></Button>
-              ) : (
-                <Button style={{
-                  fontSize: "1.2rem",
-                  background: " rgba(0, 0, 0, 0.7)",
-                  width: "100%",           
-                  color: "red",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }} onClick={deleteFromLiked}><DeleteOutlineOutlinedIcon width='100%' fontSize="medium" /></Button>
-              )}
-        
-          </div>
-              )}
-            
+              <div className="btnlike">
+                {!isLiked ? (
+                  <Button
+                    sx={{
+                      fontSize: '1.2rem',
+                      background: COLORS.OVERLAY,
+                      width: '100%',
+                      color: COLORS.PRIMARY,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      '&:hover': {
+                        background: 'rgba(0, 0, 0, 0.9)',
+                      },
+                    }}
+                    onClick={handleAddToLiked}
+                  >
+                    <FavoriteBorderIcon fontSize="medium" />
+                  </Button>
+                ) : (
+                  <Button
+                    sx={{
+                      fontSize: '1.2rem',
+                      background: COLORS.OVERLAY,
+                      width: '100%',
+                      color: COLORS.PRIMARY,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      '&:hover': {
+                        background: 'rgba(0, 0, 0, 0.9)',
+                      },
+                    }}
+                    onClick={handleDeleteFromLiked}
+                  >
+                    <DeleteOutlineOutlinedIcon fontSize="medium" />
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Card Overlay with Information */}
             <div className="card-overlay">
-              
               <div className="card-title">
-                {movie ? (movie.original_title || movie.original_name) : ""}
+                {movie?.original_title || movie?.original_name || 'Unknown'}
               </div>
               <div className="card-runtime">
-                {movie ? movie.release_date : ""}
-                <span className="card-rating">{movie ? movie.vote_average : ""}</span>
+                {movie?.release_date || movie?.first_air_date || 'N/A'}
+                <span className="card-rating">
+                  {movie?.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}
+                </span>
               </div>
               <div className="card-desc">
-                {movie ? movie.overview && movie.overview.slice(0, 118) + "..." : ""}
+                {truncateText(movie?.overview, 118)}
               </div>
-              
             </div>
-            
           </div>
         </Link>
       )}
@@ -163,4 +220,24 @@ const Cards = ({ movie, onRemove }) => {
   );
 };
 
-export default Cards;
+Card.propTypes = {
+  movie: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    poster_path: PropTypes.string,
+    original_title: PropTypes.string,
+    original_name: PropTypes.string,
+    release_date: PropTypes.string,
+    first_air_date: PropTypes.string,
+    vote_average: PropTypes.number,
+    overview: PropTypes.string,
+  }).isRequired,
+  onRemove: PropTypes.func,
+  mediaType: PropTypes.oneOf(['movie', 'tv']),
+};
+
+Card.defaultProps = {
+  mediaType: 'movie',
+  onRemove: undefined,
+};
+
+export default Card;

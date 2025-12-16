@@ -1,5 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Wix+Madefor+Display:wght@400;500;600;700;800&display=swap');
 
+/* Make box-sizing predictable to avoid 100vw/width overflow issues */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Prevent the whole page from horizontally scrolling; horizontal scrolling should be confined to list bands */
+html, body { overflow-x: hidden; }
+
 .App {
   text-align: center;
   font-family: 'Wix Madefor Display', sans-serif;

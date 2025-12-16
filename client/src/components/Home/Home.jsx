@@ -107,7 +107,7 @@ const Home = ({ mediaType = 'movie' }) => {
       <div className="allCategoriesContainer">
         {/* Render configured genres filtered by mediaType. Keep Top Rated special for movies. */}
         {mediaType === 'movie' && genres.toprated && (
-          <MediaList key="toprated" title={genres.toprated.title} mediaType="movie" />
+          <MediaList key="toprated" title={genres.toprated.title} mediaType="movie" onHome={true} />
         )}
 
         {Object.entries(genres)
@@ -118,6 +118,7 @@ const Home = ({ mediaType = 'movie' }) => {
               title={info.title}
               mediaType={info.mediaType}
               genreId={info.genreId || null}
+              onHome={true}
             />
           ))}
       </div>

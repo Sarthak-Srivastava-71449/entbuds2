@@ -9,7 +9,7 @@
 
 .suggestion-item{
   padding: 1vh;
-  width: 100vw;
+  width: 100%;
 }
 
 .suggestion-item:hover{

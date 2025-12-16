@@ -7,7 +7,7 @@ import TVCards from '../Slide/TVCard';
 import { Button } from '@mui/material';
 import './MediaList.css';
 
-export default function MediaList({ mediaType = 'movie', genreId = null, title = 'List' }) {
+export default function MediaList({ mediaType = 'movie', genreId = null, title = 'List', onHome = false }) {
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -46,18 +46,36 @@ export default function MediaList({ mediaType = 'movie', genreId = null, title =
   }, [mediaType, genreId, page]);
 
   return (
-    <div style={{ padding: 12 }}>
-      <h2 style={{ color: 'white', marginBottom: 12 }}>{title}</h2>
-      <div className="listCard">
-        {items.map((movie, idx) => (
-          mediaType === 'movie' ? <Cards key={movie.id || idx} movie={movie} /> : <TVCards key={movie.id || idx} movie={movie} />
-        ))}
+    <div style={{ padding: '24px 12px' }}>
+      {/* Container constrains to viewport and prevents page horizontal overflow */}
+      <div className="listContainer">
+        {/* Header: title left, Load More button right when onHome */}
+        <div className="listHeader">
+          <h2 className="listTitle">{title}</h2>
+          {onHome ? (
+            <div className="listActions">
+              <Button variant="contained" color="primary" onClick={() => setPage(p => p + 1)} disabled={loading} style={{ background: 'red' }}>
+                {loading ? 'Loading...' : 'Load More'}
+              </Button>
+            </div>
+          ) : null}
+        </div>
+
+        <div className={"listCard" + (onHome ? ' horizontal' : '')}>
+          {items.map((movie, idx) => (
+            mediaType === 'movie' ? <Cards key={movie.id || idx} movie={movie} /> : <TVCards key={movie.id || idx} movie={movie} />
+          ))}
+        </div>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-        <Button variant="contained" color="primary" onClick={() => setPage(p => p + 1)} disabled={loading} style={{ background: 'red' }}>
-          {loading ? 'Loading...' : 'Load More'}
-        </Button>
-      </div>
+
+      {/* When not onHome, keep the Load More centered under the list (original behavior) */}
+      {!onHome && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+          <Button variant="contained" color="primary" onClick={() => setPage(p => p + 1)} disabled={loading} style={{ background: 'red' }}>
+            {loading ? 'Loading...' : 'Load More'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
