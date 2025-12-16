@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./Home.css";
-import axios from "../../api/Axios";
-import wants from "../../api/Wanted";
+import { api, endpoints } from '../../api';
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/swiper-bundle.css";
@@ -10,30 +9,32 @@ import "swiper/css/pagination";
 import "swiper/css/navigation";
 import { Autoplay, EffectCoverflow, Pagination, Navigation } from "swiper";
 import { Link } from "react-router-dom";
-import TopHomeList from "../Homelists/Movies/TopRatedHome";
-import ActionHomeList from "../Homelists/Movies/ActionHome";
-import ComedyHomeList from "../Homelists/Movies/ComedyHome";
-import DocHomeList from "../Homelists/Movies/DocumentaryHome";
-import HorrorHomeList from "../Homelists/Movies/HorrorHome";
-import RomanceHomeList from "../Homelists/Movies/RomanceHome";
-import SciFiHomeList from "../Homelists/Movies/SciFiHome";
+import MediaList from '../Lists/MediaList';
+import genres from '../../config/genres';
 
 
-const Home = () => {
-  console.log(`${process.env.REACT_APP_API_KEY}`)
+const Home = ({ mediaType = 'movie' }) => {
   const [latestmovie, setMovie] = useState([]);
 
   useEffect(() => {
-    axios.get(wants.getLatest).then((response) => {
-      setMovie(response.data.results);
-    });
+    let mounted = true;
+    const fetchLatest = async () => {
+      try {
+        const descriptor = endpoints.moviePopular({ page: 1 });
+        const res = await api.get(descriptor.url, { params: descriptor.params });
+        if (!mounted) return;
+        setMovie(res.data.results || []);
+      } catch (e) {
+        // swallow — don't block render
+      }
+    };
+    fetchLatest();
+    return () => { mounted = false };
   }, []);
-
-  console.log(latestmovie);
 
   return (
     <div>
-      {latestmovie.length > 0 && (
+      {latestmovie?.length > 0 && (
         <Swiper
           effect={"coverflow"}
           grabCursor={true}
@@ -104,13 +105,21 @@ const Home = () => {
         </Swiper>
       )}
       <div className="allCategoriesContainer">
-        <TopHomeList />
-        <ActionHomeList />
-        <ComedyHomeList />
-        <DocHomeList />
-        <HorrorHomeList />
-        <RomanceHomeList /> 
-        <SciFiHomeList />
+        {/* Render configured genres filtered by mediaType. Keep Top Rated special for movies. */}
+        {mediaType === 'movie' && genres.toprated && (
+          <MediaList key="toprated" title={genres.toprated.title} mediaType="movie" />
+        )}
+
+        {Object.entries(genres)
+          .filter(([slug, info]) => info.mediaType === mediaType && slug !== 'toprated')
+          .map(([slug, info]) => (
+            <MediaList
+              key={slug}
+              title={info.title}
+              mediaType={info.mediaType}
+              genreId={info.genreId || null}
+            />
+          ))}
       </div>
     </div>
   );

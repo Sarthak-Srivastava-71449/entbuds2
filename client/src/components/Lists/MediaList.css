@@ -1,0 +1,2 @@
+.listCard { display:flex; flex-wrap:wrap; gap:12px }
+.listCard > * { flex: 0 0 160px }

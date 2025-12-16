@@ -1,0 +1,8 @@
+.chosen { min-height: 90vh; }
+.introduction .bg { width: 100%; height: 300px; object-fit: cover; opacity: 0.6 }
+.thumbbox { display:flex; gap: 24px; padding: 24px }
+.thumbnail .poster { width: 220px; border-radius: 8px }
+.head-data { color: white }
+.description p { max-width: 60ch }
+.review-container { display:flex; gap: 12px; align-items:center }
+.userrevs { margin-top: 16px }

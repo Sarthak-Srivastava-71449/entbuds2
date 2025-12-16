@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import Cards from '../../Slide/Card';
+import { Button} from "@mui/material";
 
 const ListPage = () => {
     const { user } = useAuth0();
@@ -59,9 +60,15 @@ const ListPage = () => {
                     <p>No movies found</p>
                 )}
             </div>
-            <button className="share-button" onClick={handleShareList}>
+            <Button style={{
+                fontSize: "1rem",
+                width: "9vw",
+                background: "red",         
+                color: "white",                
+                textDecoration: "none"
+              }} className="share-button" onClick={handleShareList}>
       Share List
-    </button>
+    </Button>
 
         </div>
     )

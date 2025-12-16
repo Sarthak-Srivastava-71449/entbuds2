@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from "@mui/material";
 import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
 import './Book.css';
@@ -23,9 +23,9 @@ const Book = () => {
   //     });
   // }, []);
 
-  const fetchMovies = async () => {
+  const fetchMovies = useCallback(async (cityArg = null) => {
     try {
-      const cityToshow = city || 'mumbai';
+      const cityToshow = cityArg || city || 'mumbai';
       const response = await fetch(`${process.env.REACT_APP_DATABASE}/api/movies/${cityToshow}`);
       const data = await response.json();
       const { movies } = data;
@@ -33,11 +33,12 @@ const Book = () => {
     } catch (error) {
       console.error('Error fetching movie data:', error);
     }
-  };
+  }, [city]);
 
   useEffect(() => {
+    // initial load
     fetchMovies();
-  }, [])
+  }, [fetchMovies]);
   
 
   const getSuggestions = value => {
@@ -114,11 +115,11 @@ const Book = () => {
       <br />
 
       {moviebooks.map((link, index) => (
-        <div className='bookcard'>
+        <div className='bookcard' key={index}>
           
           <img className='book-img' src={link.posterUrl || imagenot} alt='poster'></img>
           <div className='bookbtn'>
-          <a key={index} href={link.bookingUrl} target="_blank" rel="noopener noreferrer">
+          <a href={link.bookingUrl} target="_blank" rel="noopener noreferrer">
           <Button style={{
                 fontSize: "1.2rem",
                 background: " rgba(0, 0, 0, 0.7)",

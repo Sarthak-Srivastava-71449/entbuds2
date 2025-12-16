@@ -5,7 +5,7 @@
   
   margin: 0;
   width: 100%;
-  z-index: 2;
+  z-index: 1007;
   transition-timing-function: ease-in;
   transition: all 0.5s;
   height: 12vh;

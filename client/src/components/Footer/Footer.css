@@ -22,16 +22,18 @@ body {
     border-top-left-radius: 1em;
     border-top-right-radius: 1em;
     padding: 2em;
+    padding-left: 1vw;
     bottom: 0;
     margin-top: 4%;
     width: 100%;
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
+   
 }
 
 .contacts{
     text-align: left;
-    margin-left: 2em;
+    
 }
 
 .icons{

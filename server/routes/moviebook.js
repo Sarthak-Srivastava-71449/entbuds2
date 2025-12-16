@@ -54,7 +54,7 @@ router.get("/movies/:city", async (req, res) => {
           if (!movieSet.has(formattedTitle)) {
             movieSet.add(formattedTitle);
 
-            // Search for movie poster image using Unsplash API
+            
             const posterPromise = searchMoviePosters(formattedTitle)
               .then((posterUrl) => {
                 movies.push({

@@ -3,7 +3,6 @@ import "./SearchPage.css";
 import axios from '../../api/Axios';
 import wants from '../../api/Wanted';
 import Cards from '../Slide/Card';
-import ActionList from '../Lists/ActionList';
 
 
 const SearchPage = () => { 
@@ -12,7 +11,6 @@ const SearchPage = () => {
   const [results, setResults] = useState([]); 
   const [page, setPage] = useState(1); 
   const [showload, setshowload] = useState(false); 
-  const [notblank, setnotblank] = useState(true); 
 
 
   useEffect(() =>{
@@ -36,8 +34,7 @@ const SearchPage = () => {
 
   const InputChange = e => {
     const value = e.target.value;
-    setQuery(value);
-    setnotblank(false);
+  setQuery(value);
 
     if (value) {
       if (results.length > 0) {
@@ -54,7 +51,6 @@ const SearchPage = () => {
       }
     } else {
       setResults([]);
-      setnotblank(true);
     }
   };
 
@@ -68,9 +64,6 @@ const SearchPage = () => {
          <br />
          <br />
       <input type="text"  className="searchbar" placeholder="  Search for a movie" value={query} onChange={InputChange}  style={{ color: 'white', fontSize: '12px', paddingLeft: "1em" }} />
-      {notblank && (
-        <ActionList />
-      )}
       <br />
       <br />
       <br />

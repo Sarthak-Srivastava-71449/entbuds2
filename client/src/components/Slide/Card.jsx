@@ -5,6 +5,7 @@ import { Button } from "@mui/material";
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import { useAuth0 } from "@auth0/auth0-react";
+import { getLikedMovies, invalidateLikedCache } from '../../utils/likedCache';
 
 const Cards = ({ movie, onRemove }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -18,32 +19,24 @@ const Cards = ({ movie, onRemove }) => {
   }, [])
 
   useEffect(() => {
+    let mounted = true;
     setLiked(false); // Reset isLiked state when component re-renders
-    if (movie && isAuthenticated) {
-      // Check if the movie is in the liked movie list
-      fetch(`${process.env.REACT_APP_DATABASE}/api/likedmovie/${user.email}`)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.msg === "Success") {
-            const likedMovies = data.movies;
-            const isLikedMovie = likedMovies.some(
-              (likedMovie) => likedMovie.id === movie.id
-            );
-            setLiked(isLikedMovie);
-          }
-        })
-        .catch((e) => {
-          console.log(e);
-        });
+    if (movie && isAuthenticated && user?.email) {
+      getLikedMovies(user.email).then((likedMovies) => {
+        if (!mounted) return;
+        const isLikedMovie = (likedMovies || []).some((likedMovie) => likedMovie.id === movie.id);
+        setLiked(isLikedMovie);
+      }).catch(() => {});
     }
     setIsLoading(false);
-  }, [movie, user, isAuthenticated]);
+    return () => { mounted = false };
+  }, [movie, user?.email, isAuthenticated]);
 
   const addToLiked = async (event) => {
     try {
       event.preventDefault();
       setLiked(true);
-      const liker = await fetch(`${process.env.REACT_APP_DATABASE}/api/add`, {
+  const liker = await fetch(`${process.env.REACT_APP_DATABASE}/api/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -60,6 +53,8 @@ const Cards = ({ movie, onRemove }) => {
   
       const likerData = await liker.json();
       console.log(likerData);
+  // Invalidate cache for this user so other cards update
+  invalidateLikedCache(user.email);
   
     } catch (e) {
       console.log(e);
@@ -70,7 +65,7 @@ const Cards = ({ movie, onRemove }) => {
     try {
       event.preventDefault();
       setLiked(false)
-      const deleter = await fetch(`${process.env.REACT_APP_DATABASE}/api/delete`, {
+  const deleter = await fetch(`${process.env.REACT_APP_DATABASE}/api/delete`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -87,6 +82,8 @@ const Cards = ({ movie, onRemove }) => {
   
       const deleterData = await deleter.json();
       console.log(deleterData);
+  // Invalidate cache for this user so other cards update
+  invalidateLikedCache(user.email);
 
       onRemove(movie.id)
   

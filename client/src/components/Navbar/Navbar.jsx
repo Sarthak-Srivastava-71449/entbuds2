@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { Button } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import { useAuth0 } from "@auth0/auth0-react";
+import genres from '../../config/genres';
 
 const Navbar = () => {
     const [nottransparent, letstransp] = useState(false);
@@ -53,21 +54,22 @@ const Navbar = () => {
             
                 <div className='left'>
             <Link to="/"><img src={cinebuds} className='logo' alt='logo'></img></Link>
-            <div className='spans'>
+                        <div className='spans'>
             
-            <Link to="movies/toprated" style={{textDecoration: "none"}}><span id='top'>Top Rated</span></Link>
-            <span onClick={handleDropdown}>Categories</span>
-            {showDropdown && (
-                                <div className="dropdown-content" ref={dropdownRef} >
-                                    <Link to="movies/horror" style={{textDecoration: "none"}}><span>Horror</span></Link>
-                                    <Link to="movies/action" style={{textDecoration: "none"}}><span>Action</span></Link>
-                                    <Link to="movies/comedy" style={{textDecoration: "none"}}><span>Comedy</span></Link>
-                                    <Link to="movies/romance" style={{textDecoration: "none"}}><span>Romance</span></Link>
-                                    <Link to="movies/documentary" style={{textDecoration: "none"}}><span>Documentaries</span></Link>
-                                    <Link to="movies/scifi" style={{textDecoration: "none"}}><span>Sci-Fi</span></Link>
-                                </div>
-                            )}
-            <Link to="movies/search" style={{textDecoration: "none", color: "white"}}><span>Search</span></Link>
+                        <Link to="movies/toprated" style={{textDecoration: "none"}}><span id='top'>Top Rated</span></Link>
+                        <span onClick={handleDropdown}>Categories</span>
+                        {showDropdown && (
+                                                                <div className="dropdown-content" ref={dropdownRef} >
+                                                                        {Object.entries(genres)
+                                                                            .filter(([slug]) => slug !== 'toprated')
+                                                                            .map(([slug, info]) => (
+                                                                                <Link key={slug} to={`movies/${slug}`} style={{textDecoration: 'none'}}>
+                                                                                    <span>{info.title}</span>
+                                                                                </Link>
+                                                                            ))}
+                                                                </div>
+                                                        )}
+                        <Link to="movies/search" style={{textDecoration: "none", color: "white"}}><span>Search</span></Link>
             {isAuthenticated && (<Link to="userList" style={{textDecoration: "none", color: "white"}}><span>My List</span></Link>)}
             <Link to="tvhome" style={{textDecoration: "none", color: "white"}}><span>TV Shows</span></Link>
             <Link to="booking" style={{textDecoration: "none", color: "white"}}><span>Book</span></Link>
