@@ -12,8 +12,8 @@ const MediaPage = React.lazy(() => import('./components/FilmPage/Media/MediaPage
 const SearchPage = React.lazy(() => import('./components/Navbar/SearchPage'));
 const GenrePage = React.lazy(() => import('./components/Lists/GenrePage'));
 const ListPage = React.lazy(() => import('./components/FilmPage/UserPage/ListPage'));
-const PrivacyPolicy = React.lazy(() => import('./components/Footer/privacy-policy/PrivacyPolicy'));
-const Terms = React.lazy(() => import('./components/Footer/terms/T&C'));
+const PrivacyPolicy = React.lazy(() => import('./components/Footer/Policy/PrivacyPolicy'));
+const Terms = React.lazy(() => import('./components/Footer/Terms/T&C'));
 const Book = React.lazy(() => import('./components/Booking/Book'));
 
 function App() {

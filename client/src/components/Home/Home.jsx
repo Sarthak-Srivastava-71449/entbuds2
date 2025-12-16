@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./Home.css";
-import { api, endpoints } from '../../api';
+import { fetchPopularMovies } from '../../services/tmdbService';
+import { getErrorMessage } from '../../utils/apiHelpers';
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/swiper-bundle.css";
@@ -20,11 +21,11 @@ const Home = ({ mediaType = 'movie' }) => {
     let mounted = true;
     const fetchLatest = async () => {
       try {
-        const descriptor = endpoints.moviePopular({ page: 1 });
-        const res = await api.get(descriptor.url, { params: descriptor.params });
+        const res = await fetchPopularMovies(1);
         if (!mounted) return;
-        setMovie(res.data.results || []);
+        setMovie(res.data?.results || []);
       } catch (e) {
+        console.error('Error fetching popular movies:', getErrorMessage(e));
         // swallow — don't block render
       }
     };

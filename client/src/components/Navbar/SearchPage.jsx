@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from '../../api/Axios';
-import wants from '../../api/Wanted';
 import Cards from '../Slide/Card';
+import { searchMedia } from '../../services/tmdbService';
+import { getErrorMessage } from '../../utils/apiHelpers';
 import { ERROR_MESSAGES } from '../../config/constants';
 import './SearchPage.css';
 
@@ -31,16 +31,17 @@ const SearchPage = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await axios.get(`${wants.getsearch}&query=${query}&page=${page}`);
+        const response = await searchMedia(query, page);
+        const data = response.data;
 
-        if (response.data && response.data.results) {
+        if (data && data.results) {
           setResults((prevResults) =>
-            page === 1 ? response.data.results : [...prevResults, ...response.data.results]
+            page === 1 ? data.results : [...prevResults, ...data.results]
           );
         }
       } catch (err) {
         console.error('Search error:', err);
-        setError(err.message || ERROR_MESSAGES.FETCH_ERROR);
+        setError(getErrorMessage(err) || ERROR_MESSAGES.FETCH_ERROR);
       } finally {
         setIsLoading(false);
       }

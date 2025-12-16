@@ -7,6 +7,14 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ReplyIcon from '@mui/icons-material/Reply';
 import EditIcon from '@mui/icons-material/Edit';
 import DoneIcon from '@mui/icons-material/Done';
+import {
+  fetchReviewsByTitle,
+  editReview,
+  deleteReview,
+  toggleReviewLike,
+  replyToReview,
+} from '../../../services/backendService';
+import { getErrorMessage } from '../../../utils/apiHelpers';
 
 
 const UserReviews = (props) => {
@@ -25,17 +33,26 @@ const UserReviews = (props) => {
   };
 
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_DATABASE}/api/review/${name}`)
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.exist) {
-          setCustReviews(data.out.reviews);
-          console.log(data.out);
+    let isMounted = true;
+
+    const loadReviews = async () => {
+      try {
+        const data = await fetchReviewsByTitle(name);
+        if (isMounted) {
+          if (data.exist) {
+            setCustReviews(data.out.reviews);
+          }
         }
-      })
-      .catch((e) => {
-        console.log(e);
-      });
+      } catch (err) {
+        console.error('Error fetching reviews:', err);
+      }
+    };
+
+    loadReviews();
+
+    return () => {
+      isMounted = false;
+    };
   }, [name]);
 
   const handleShowEditForm = (text, reviewId) => {
@@ -50,118 +67,62 @@ const UserReviews = (props) => {
     e.preventDefault();
 
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_DATABASE}/api/review/edit/${name}/${review._id}`,
-        {
-          method: "PUT",
-          headers: { "Content-type": "application/json" },
-          body: JSON.stringify({
-            text: editText,
-          }),
-        }
+      const updatedReview = await editReview(name, review._id, editText);
+      const updatedReviews = CustReviews.map((r) =>
+        r._id === updatedReview._id ? updatedReview : r
       );
-      if (response.ok) {
-        const updatedReview = await response.json();
-        const updatedReviews = CustReviews.map((r) =>
-          r._id === updatedReview._id ? updatedReview : r
-        );
-        setCustReviews(updatedReviews);
-        setShowEditForm(false);
-        console.log("Review updated");
-      } else {
-        console.log("Review update failed");
-      }
-    } catch (e) {
-      console.log(e);
+      setCustReviews(updatedReviews);
+      setShowEditForm({});
+    } catch (err) {
+      console.error('Error updating review:', err);
+      alert(getErrorMessage(err) || 'Failed to update review');
     }
   };
 
 
   const handleDeleteReview = async (e, review) => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_DATABASE}/api/review/${name}/${review._id}`,
-        {
-          method: "DELETE",
-          headers: { "Content-type": "application/json" },
-          body: JSON.stringify({
-            name: username,
-          }),
-        }
+      await deleteReview(name, review._id, username);
+      const updatedReviews = CustReviews.filter(
+        (reviews) => reviews._id !== review._id
       );
-
-      if (response.ok) {
-        const updatedReviews = CustReviews.filter(
-          (reviews) => reviews._id !== review._id
-        );
-        setCustReviews(updatedReviews);
-      }
-    } catch (e) {
-      console.log(e);
+      setCustReviews(updatedReviews);
+    } catch (err) {
+      console.error('Error deleting review:', err);
+      alert(getErrorMessage(err) || 'Failed to delete review');
     }
   };
 
   const handleLikeReview = async (e, review) => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_DATABASE}/api/review/like/${name}/${review._id}/${user.email}`,
-        {
-          method: "PUT",
-          headers: { "Content-type": "application/json" },
-        }
+      const updatedReview = await toggleReviewLike(name, review._id, user.email);
+      const updatedReviews = CustReviews.map((r) =>
+        r._id === updatedReview._id ? updatedReview : r
       );
-      if (response.ok) {
-        const updatedReview = await response.json(); // get the updated review object from response
-        const updatedReviews = CustReviews.map((r) => {
-          if (r._id === updatedReview._id) {
-            return updatedReview;
-          } else {
-            return r;
-          }
-        });
-        setCustReviews(updatedReviews);
-        console.log("Like Updated");
-      } else {
-        console.log("Like Failed");
-      }
-    } catch (e) {
-      console.log(e);
+      setCustReviews(updatedReviews);
+    } catch (err) {
+      console.error('Error liking review:', err);
+      alert(getErrorMessage(err) || 'Failed to like review');
     }
   };
 
   const handleReplyReview = async (e, review) => {
     e.preventDefault();
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_DATABASE}/api/review/reply/${name}/${review._id}`,
-        {
-          method: "POST",
-          headers: { "Content-type": "application/json" },
-          body: JSON.stringify({
-            text: replyText,
-            user: user.name,
-            userimage: user.picture,
-          }),
-        }
+      const updatedReview = await replyToReview(name, review._id, {
+        text: replyText,
+        user: user.name,
+        userimage: user.picture,
+      });
+      const updatedReviews = CustReviews.map((r) =>
+        r._id === review._id ? updatedReview : r
       );
-      if (response.ok) {
-        const updatedReview = await response.json(); // get the reply object from response
-        const updatedReviews = CustReviews.map((r) => {
-          if (r._id === review._id) {
-            const updatedReplies = [...r.replies, updatedReview];
-            return { ...r, replies: updatedReplies };
-          } else {
-            return r;
-          }
-        });
-        setCustReviews(updatedReviews);
-        setReplyText("")
-        console.log("Reply Added");
-      } else {
-        console.log("Reply Failed");
-      }
-    } catch (e) {
-      console.log(e);
+      setCustReviews(updatedReviews);
+      setReplyText("");
+      setShowReplySection({});
+    } catch (err) {
+      console.error('Error replying to review:', err);
+      alert(getErrorMessage(err) || 'Failed to reply to review');
     }
   };
 

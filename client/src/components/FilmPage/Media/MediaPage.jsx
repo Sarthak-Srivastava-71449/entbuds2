@@ -3,19 +3,18 @@ import PropTypes from 'prop-types';
 import { useParams } from 'react-router-dom';
 import { Button, TextField } from '@mui/material';
 import { useAuth0 } from '@auth0/auth0-react';
-import { api } from '../../../api';
-import endpoints from '../../../api/Wanted';
-import YTReviews from '../YTReviews/YTReviews';
-import UserReviews from '../UserReviews/UserReviews';
+import { fetchMovieDetails, fetchTVDetails } from '../../../services/tmdbService';
+import { postReview, fetchReviewByTitle } from '../../../services/backendService';
+import { getErrorMessage } from '../../../utils/apiHelpers';
 import {
   getTMDBImageUrl,
   formatDate,
   formatRating,
   getMovieTitle,
-  postReview,
-  fetchReviewByTitle,
 } from '../../../utils/apiHelpers';
 import { ERROR_MESSAGES } from '../../../config/constants';
+import YTReviews from '../YTReviews/YTReviews';
+import UserReviews from '../UserReviews/UserReviews';
 import './MediaPage.css';
 
 /**
@@ -42,14 +41,11 @@ const MediaPage = ({ mediaType = 'movie' }) => {
       try {
         setIsLoading(true);
         setError(null);
-        const descriptor =
-          mediaType === 'movie'
-            ? endpoints.movieDetails(id, { language: 'en-US' })
-            : endpoints.tvDetails(id, { language: 'en-US' });
 
-        const response = await api.get(descriptor.url, {
-          params: descriptor.params,
-        });
+        const response =
+          mediaType === 'movie'
+            ? await fetchMovieDetails(id)
+            : await fetchTVDetails(id);
 
         if (isMounted && response.data) {
           setMediaData(response.data);
@@ -59,7 +55,7 @@ const MediaPage = ({ mediaType = 'movie' }) => {
       } catch (err) {
         console.error('Error fetching media details:', err);
         if (isMounted) {
-          setError(err.message || ERROR_MESSAGES.FETCH_ERROR);
+          setError(getErrorMessage(err) || ERROR_MESSAGES.FETCH_ERROR);
         }
       } finally {
         if (isMounted) {

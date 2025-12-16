@@ -4,7 +4,8 @@ import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
 import Autosuggest from 'react-autosuggest';
 import cityList from './Cities';
 import { DEFAULT_CITY } from '../../config/constants';
-import { fetchCityBookings, getErrorMessage } from '../../utils/apiHelpers';
+import { fetchCityBookings } from '../../services/backendService';
+import { getErrorMessage } from '../../utils/apiHelpers';
 import './Book.css';
 import imagenot from './nopost.png';
 

@@ -5,8 +5,8 @@ import { Button } from '@mui/material';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import { useAuth0 } from '@auth0/auth0-react';
-import { getLikedMovies, invalidateLikedCache } from '../../utils/likedCache';
-import { getTMDBImageUrl, truncateText, addMovieToLiked, removeMovieFromLiked } from '../../utils/apiHelpers';
+import { getLikedMovies, addMovieToLiked, removeMovieFromLiked } from '../../services/backendService';
+import { getTMDBImageUrl, truncateText } from '../../utils/apiHelpers';
 import { COLORS, UI_CONFIG } from '../../config/constants';
 import './Card.css';
 
@@ -72,8 +72,6 @@ const Card = ({ movie, onRemove, mediaType = 'movie' }) => {
       try {
         setIsLiked(true);
         await addMovieToLiked(user.email, movie);
-        // Invalidate cache for this user so other cards update
-        invalidateLikedCache(user.email);
       } catch (error) {
         console.error('Error adding to liked:', error);
         setIsLiked(false);
@@ -97,8 +95,6 @@ const Card = ({ movie, onRemove, mediaType = 'movie' }) => {
       try {
         setIsLiked(false);
         await removeMovieFromLiked(user.email, movie.id);
-        // Invalidate cache for this user so other cards update
-        invalidateLikedCache(user.email);
 
         // Notify parent to remove from list if on a list page
         if (onRemove) {

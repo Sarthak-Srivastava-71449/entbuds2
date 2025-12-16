@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@mui/material';
 import { useAuth0 } from '@auth0/auth0-react';
 import Cards from '../../Slide/Card';
-import { shareUserList, getErrorMessage, apiFetch } from '../../../utils/apiHelpers';
-import { API_CONFIG } from '../../../config/constants';
+import { shareUserList, getLikedMovies } from '../../../services/backendService';
+import { getErrorMessage } from '../../../utils/apiHelpers';
 import './ListPage.css';
 
 /**
@@ -29,16 +29,10 @@ const ListPage = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await apiFetch(
-          `${API_CONFIG.BASE_URL}/api/likedmovie/${user.email}`
-        );
+        const movies = await getLikedMovies(user.email);
 
         if (isMounted) {
-          if (data.msg === 'Success') {
-            setLikedMovies(data.movies || []);
-          } else {
-            setError('Failed to load liked movies');
-          }
+          setLikedMovies(movies || []);
         }
       } catch (err) {
         console.error('Error fetching liked movies:', err);

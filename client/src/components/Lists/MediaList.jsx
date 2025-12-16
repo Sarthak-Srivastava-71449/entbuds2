@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { api } from '../../api';
-import endpoints from '../../api/Wanted';
+import { fetchPopularMovies, fetchMoviesByGenre, fetchTVShows, fetchTVShowsByGenre } from '../../services/tmdbService';
 import Cards from '../Slide/Card';
 import TVCards from '../Slide/TVCard';
 import { Button } from '@mui/material';
@@ -23,18 +22,25 @@ export default function MediaList({ mediaType = 'movie', genreId = null, title =
 
     const fetcher = async () => {
       try {
-        let descriptor;
+        let response;
+        
         if (genreId) {
-          descriptor = mediaType === 'movie' ? endpoints.discoverByGenre(genreId, { page }) : endpoints.discoverTV({ page, with_genres: genreId });
+          // Fetch by genre
+          response = mediaType === 'movie' 
+            ? await fetchMoviesByGenre(genreId, page)
+            : await fetchTVShowsByGenre(genreId, page);
         } else {
-          descriptor = mediaType === 'movie' ? endpoints.moviePopular({ page }) : endpoints.discoverTV({ page });
+          // Fetch popular
+          response = mediaType === 'movie' 
+            ? await fetchPopularMovies(page)
+            : await fetchTVShows(page);
         }
 
-        const res = await api.get(descriptor.url, { params: descriptor.params });
         if (!mounted) return;
-        const results = res.data.results || [];
+        const results = response.data?.results || [];
         setItems(prev => (page === 1 ? results : [...prev, ...results]));
       } catch (e) {
+        console.error('Error fetching media:', e);
         // swallow — caller can show error UI
       } finally {
         if (mounted) setLoading(false);

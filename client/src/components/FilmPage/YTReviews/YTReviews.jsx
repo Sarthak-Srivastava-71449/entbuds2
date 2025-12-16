@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import axios from 'axios';
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
+import { fetchYouTubeReviews } from '../../../services/backendService';
+import { getErrorMessage, getYouTubeEmbedUrl } from '../../../utils/apiHelpers';
 import { ERROR_MESSAGES } from '../../../config/constants';
 import './YTReviews.css';
 
@@ -23,23 +24,19 @@ const YTReviews = ({ title }) => {
 
     let isMounted = true;
 
-    const fetchReviews = async () => {
+    const loadReviews = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await axios.get(
-          `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${title}moviereview&type=video&key=${
-            process.env.REACT_APP_API_KEY2
-          }`
-        );
+        const data = await fetchYouTubeReviews(title, 10);
 
-        if (isMounted && response.data && response.data.items) {
-          setReviews(response.data.items);
+        if (isMounted && data && data.items) {
+          setReviews(data.items);
         }
       } catch (err) {
         console.error('Error fetching YouTube reviews:', err);
         if (isMounted) {
-          setError(err.message || ERROR_MESSAGES.FETCH_ERROR);
+          setError(getErrorMessage(err) || ERROR_MESSAGES.FETCH_ERROR);
         }
       } finally {
         if (isMounted) {
@@ -48,7 +45,7 @@ const YTReviews = ({ title }) => {
       }
     };
 
-    fetchReviews();
+    loadReviews();
 
     return () => {
       isMounted = false;
@@ -85,7 +82,7 @@ const YTReviews = ({ title }) => {
         {reviews.map((video) => (
           <div key={video.id.videoId} className="revvid">
             <iframe
-              src={`https://www.youtube.com/embed/${video.id.videoId}`}
+              src={getYouTubeEmbedUrl(video.id.videoId)}
               className="ytvideo"
               title={video.snippet.title}
               allowFullScreen
